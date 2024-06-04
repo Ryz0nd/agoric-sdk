@@ -46,11 +46,14 @@ export const commonSetup = async t => {
     sequence: false,
   });
 
-  const { makeOrchestrationKit } = prepareOrchestrationTools(
-    rootZone.subZone('orchestration'),
+  const { portAllocator, vowTools } = fakeNetworkEchoStuff(
+    rootZone.subZone('network'),
   );
 
-  const { portAllocator } = fakeNetworkEchoStuff(rootZone.subZone('network'));
+  const { makeOrchestrationKit } = prepareOrchestrationTools(
+    rootZone.subZone('orchestration'),
+    vowTools,
+  );
   const { public: orchestration } = makeOrchestrationKit({ portAllocator });
 
   return {
@@ -62,6 +65,7 @@ export const commonSetup = async t => {
       orchestration,
       rootZone,
       storage,
+      vowTools,
     },
     brands: {
       // TODO consider omitting `issuer` to prevent minting, which the bank can't observe
