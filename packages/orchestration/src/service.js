@@ -69,12 +69,12 @@ const prepareOrchestrationKit = (
   zone.exoClassKit(
     'Orchestration',
     {
-      requestICAConnectionWatcher: M.interface('RequestICAConnectionWatcher', {
+      requestICAChannelWatcher: M.interface('RequestICAChannelWatcher', {
         onFulfilled: M.call(M.remotable('Port'))
           .optional({ remoteConnAddr: M.string() })
           .returns(NetworkShape.Vow$(NetworkShape.Connection)),
       }),
-      requestICQConnectionWatcher: M.interface('RequestICQConnectionWatcher', {
+      requestICQChannelWatcher: M.interface('RequestICQChannelWatcher', {
         onFulfilled: M.call(M.remotable('Port'))
           .optional({
             remoteConnAddr: M.string(),
@@ -114,7 +114,7 @@ const prepareOrchestrationKit = (
       return /** @type {OrchestrationState} */ ({ powers, icqConnections });
     },
     {
-      requestICAConnectionWatcher: {
+      requestICAChannelWatcher: {
         /**
          * @param {Port} port
          * @param {{
@@ -130,7 +130,7 @@ const prepareOrchestrationKit = (
           );
         },
       },
-      requestICQConnectionWatcher: {
+      requestICQChannelWatcher: {
         /**
          * @param {Port} port
          * @param {{
@@ -197,7 +197,7 @@ const prepareOrchestrationKit = (
           return when(
             watch(
               E(portAllocator).allocateICAControllerPort(),
-              this.facets.requestICAConnectionWatcher,
+              this.facets.requestICAChannelWatcher,
               {
                 remoteConnAddr,
               },
@@ -210,6 +210,7 @@ const prepareOrchestrationKit = (
          */
         provideICQConnection(controllerConnectionId) {
           if (this.state.icqConnections.has(controllerConnectionId)) {
+            // TODO #9281 do not return synchronously. see https://github.com/Agoric/agoric-sdk/pull/9454#discussion_r1626898694
             return this.state.icqConnections.get(controllerConnectionId)
               .connection;
           }
@@ -220,7 +221,7 @@ const prepareOrchestrationKit = (
               // allocate a new Port for every Connection
               // TODO #9317 optimize ICQ port allocation
               E(portAllocator).allocateICQControllerPort(),
-              this.facets.requestICQConnectionWatcher,
+              this.facets.requestICQChannelWatcher,
               {
                 remoteConnAddr,
                 controllerConnectionId,
