@@ -112,7 +112,7 @@ const makeRemoteChainFacade = (
     zcf,
   );
 
-  return {
+  return harden({
     getChainInfo: async () => chainInfo,
     /** @returns {Promise<OrchestrationAccount<CCI>>} */
     makeAccount: async () => {
@@ -138,7 +138,7 @@ const makeRemoteChainFacade = (
         timer,
       });
     },
-  };
+  });
 };
 
 /**
@@ -173,7 +173,7 @@ export const makeOrchestrationFacade = ({
     orchestrationService,
   });
 
-  return {
+  return harden({
     /**
      * @template Context
      * @template {any[]} Args
@@ -218,7 +218,7 @@ export const makeOrchestrationFacade = ({
       };
       return async (...args) => fn(orc, ctx, ...args);
     },
-  };
+  });
 };
 harden(makeOrchestrationFacade);
 /** @typedef {ReturnType<typeof makeOrchestrationFacade>} OrchestrationFacade */
