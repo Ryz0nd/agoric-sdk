@@ -202,8 +202,8 @@ export const makeOrchestrationFacade = ({
 
           const remoteChainInfo = await chainHub.getChainInfo(name);
           const connectionInfo = await chainHub.getConnectionInfo(
-            agoricChainInfo.chainId,
-            remoteChainInfo.chainId,
+            agoricChainInfo,
+            remoteChainInfo,
           );
 
           return makeRemoteChainFacade(remoteChainInfo, connectionInfo, {
