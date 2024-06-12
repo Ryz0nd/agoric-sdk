@@ -1,6 +1,7 @@
 /** @file Orchestration service */
 
 import { E } from '@endo/far';
+import { makeScalarMapStore } from '@agoric/store';
 import { prepareCosmosOrchestrationAccount } from './exos/cosmosOrchestrationAccount.js';
 
 /**
@@ -16,6 +17,8 @@ import { prepareCosmosOrchestrationAccount } from './exos/cosmosOrchestrationAcc
 /** @type {any} */
 const anyVal = null;
 
+let debugEvent = 0;
+
 /**
  * @param {Remote<LocalChain>} localchain
  * @param {ReturnType<
@@ -29,7 +32,10 @@ const makeLocalChainFacade = (
   makeLocalChainAccountKit,
   localInfo,
 ) => {
+  console.log('@@@ MAKE LOCAL CHAIN', (debugEvent += 1));
+
   return {
+    _local: debugEvent,
     /** @returns {Promise<ChainInfo>} */
     async getChainInfo() {
       return localInfo;
@@ -112,7 +118,10 @@ const makeRemoteChainFacade = (
     zcf,
   );
 
+  console.log('@@@ MAKE REMOTE CHAIN', (debugEvent += 1));
   return harden({
+    _remote: debugEvent,
+
     getChainInfo: async () => chainInfo,
     /** @returns {Promise<OrchestrationAccount<CCI>>} */
     makeAccount: async () => {
@@ -173,6 +182,33 @@ export const makeOrchestrationFacade = ({
     orchestrationService,
   });
 
+  let agoricChain;
+
+  const chainByName = new Map();
+  const provideChain = (name, chainInfo, connectionInfo) => {
+    if (chainByName.has(name)) return chainByName.get(name);
+
+    const chain = (() => {
+      if (name === 'agoric') {
+        agoricChain = makeLocalChainFacade(
+          localchain,
+          makeLocalChainAccountKit,
+          chainInfo,
+        );
+        return agoricChain;
+      }
+
+      return makeRemoteChainFacade(chainInfo, connectionInfo, {
+        orchestration: orchestrationService,
+        timer: timerService,
+        zcf,
+        zone,
+      });
+    })();
+    chainByName.set(name, chain);
+    return chain;
+  };
+
   return harden({
     /**
      * @template Context
@@ -187,34 +223,48 @@ export const makeOrchestrationFacade = ({
       /** @type {Orchestrator} */
       const orc = {
         async getChain(name) {
+          if (chainByName.has(name)) return chainByName.get(name);
           const agoricChainInfo = await chainHub.getChainInfo('agoric');
 
+          let chainInfo;
+          let connectionInfo;
           if (name === 'agoric') {
-            return makeLocalChainFacade(
-              localchain,
-              makeLocalChainAccountKit,
-              agoricChainInfo,
+            chainInfo = agoricChainInfo;
+            await chainHub.saveVBankAssets(); // XXX document
+          } else {
+            const remoteChainInfo = await chainHub.getChainInfo(name);
+            chainInfo = remoteChainInfo;
+            connectionInfo = await chainHub.getConnectionInfo(
+              agoricChainInfo.chainId,
+              remoteChainInfo.chainId,
             );
           }
 
-          const remoteChainInfo = await chainHub.getChainInfo(name);
-          const connectionInfo = await chainHub.getConnectionInfo(
-            agoricChainInfo.chainId,
-            remoteChainInfo.chainId,
-          );
-
-          return makeRemoteChainFacade(remoteChainInfo, connectionInfo, {
-            orchestration: orchestrationService,
-            timer: timerService,
-            zcf,
-            zone,
-          });
+          return provideChain(name, chainInfo, connectionInfo);
         },
         makeLocalAccount() {
           return E(localchain).makeAccount();
         },
-        getBrandInfo: anyVal,
-        asAmount: anyVal,
+        /** @type {Orchestrator['getBrandInfo']} */
+        getBrandInfo: denom => {
+          const info = chainHub.getAssetInfo(denom);
+          if ('brand' in info) {
+            const chain = agoricChain;
+            const { brand, issuerChain, baseDenom } = info;
+
+            const base = chainByName.has(issuerChain)
+              ? chainByName.get(issuerChain)
+              : provideChain(
+                  issuerChain,
+                  chainHub.recallChainInfo(issuerChain),
+                );
+            return { base, baseDenom, chain, brand };
+          }
+          console.error('@@getBrandInfo TODO', denom, info);
+          throw Error('not implemented');
+        },
+        /** @type {Orchestrator['asAmount']} */
+        asAmount: () => assert.fail(`not impl`),
       };
       return async (...args) => fn(orc, ctx, ...args);
     },
