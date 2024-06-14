@@ -69,6 +69,7 @@
     "@endo/patterns": "^1.4.0",
     "@endo/promise-kit": "^1.1.2",
     "@iarna/toml": "^2.2.3",
+    "@zip.js/zip.js": "^2.7.45",
     "anylogger": "^0.21.0",
     "chalk": "^5.2.0",
     "commander": "^11.1.0",

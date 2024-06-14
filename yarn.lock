@@ -3785,6 +3785,11 @@
     js-yaml "^3.10.0"
     tslib "^2.4.0"
 
+"@zip.js/zip.js@^2.7.45":
+  version "2.7.45"
+  resolved "https://registry.yarnpkg.com/@zip.js/zip.js/-/zip.js-2.7.45.tgz#823fe2789401d8c1d836ce866578379ec1bd6f0b"
+  integrity sha512-Mm2EXF33DJQ/3GWWEWeP1UCqzpQ5+fiMvT3QWspsXY05DyqqxWu7a9awSzU4/spHMHVFrTjani1PR0vprgZpow==
+
 "@zkochan/js-yaml@0.0.6":
   version "0.0.6"
   resolved "https://registry.yarnpkg.com/@zkochan/js-yaml/-/js-yaml-0.0.6.tgz#975f0b306e705e28b8068a07737fa46d3fc04826"
